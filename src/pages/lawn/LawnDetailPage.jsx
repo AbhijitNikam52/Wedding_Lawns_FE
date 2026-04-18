@@ -3,8 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { fetchLawnById } from "../../services/lawnService";
 import { useAuth } from "../../context/AuthContext";
 import AvailabilityCalendar from "../../components/ui/AvailabilityCalendar";
-import LazyImage     from "../../components/ui/LazyImage";
+import LazyImage from "../../components/ui/LazyImage";
 import SkeletonDetail from "../../components/ui/SkeletonDetail";
+import MapView from "../../components/ui/MapView";
 
 const AMENITY_ICONS = {
   AC: "❄️", Parking: "🚗", Catering: "🍽️", Generator: "⚡",
@@ -12,14 +13,14 @@ const AMENITY_ICONS = {
 };
 
 const LawnDetailPage = () => {
-  const { id }              = useParams();
-  const navigate            = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
 
-  const [lawn,      setLawn]      = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [photoIdx,  setPhotoIdx]  = useState(0);
-  const [notFound,  setNotFound]  = useState(false);
+  const [lawn, setLawn] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const [notFound, setNotFound] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ const LawnDetailPage = () => {
   );
 
   const photos = lawn.photos?.length ? lawn.photos : [];
-  const owner  = lawn.ownerId;
+  const owner = lawn.ownerId;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -108,9 +109,8 @@ const LawnDetailPage = () => {
                         src={ph}
                         alt={`thumb ${i + 1}`}
                         onClick={() => setPhotoIdx(i)}
-                        className={`h-16 w-24 object-cover rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all ${
-                          i === photoIdx ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
-                        }`}
+                        className={`h-16 w-24 object-cover rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all ${i === photoIdx ? "border-primary" : "border-transparent opacity-70 hover:opacity-100"
+                          }`}
                       />
                     ))}
                   </div>
@@ -141,7 +141,7 @@ const LawnDetailPage = () => {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 py-4 border-y border-gray-100 mb-4">
               <Stat icon="👥" label="Capacity" value={`${lawn.capacity?.toLocaleString()} guests`} />
-              <Stat icon="📍" label="City"     value={lawn.city} />
+              <Stat icon="📍" label="City" value={lawn.city} />
               {lawn.rating > 0 && (
                 <Stat icon="⭐" label="Rating" value={`${lawn.rating.toFixed(1)} / 5`} />
               )}
@@ -169,6 +169,19 @@ const LawnDetailPage = () => {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Google Map */}
+            {lawn.location?.lat && lawn.location?.lng && (
+              <div>
+                <h3 className="font-semibold text-dark mb-3">📍 Location</h3>
+                <MapView
+                  lat={lawn.location.lat}
+                  lng={lawn.location.lng}
+                  lawnName={lawn.name}
+                  formattedAddress={lawn.location.formattedAddress || lawn.address}
+                />
               </div>
             )}
           </div>

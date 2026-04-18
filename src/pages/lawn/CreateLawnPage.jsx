@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createLawn } from "../../services/lawnService";
 import PhotoUploader from "../../components/ui/PhotoUploader";
+import AddressAutocomplete from "../../components/ui/AddressAutocomplete";
 import toast from "react-hot-toast";
 
 const AMENITY_OPTIONS = [
@@ -13,16 +14,16 @@ const CreateLawnPage = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    name:        "",
-    city:        "",
-    address:     "",
-    capacity:    "",
+    name: "",
+    city: "",
+    address: "",
+    capacity: "",
     pricePerDay: "",
     description: "",
-    amenities:   [],
+    amenities: [],
   });
   const [createdLawnId, setCreatedLawnId] = useState(null); // set after lawn saved
-  const [step,    setStep]    = useState(1); // step 1: details, step 2: photos
+  const [step, setStep] = useState(1); // step 1: details, step 2: photos
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
@@ -43,7 +44,7 @@ const CreateLawnPage = () => {
     try {
       const data = await createLawn({
         ...form,
-        capacity:    Number(form.capacity),
+        capacity: Number(form.capacity),
         pricePerDay: Number(form.pricePerDay),
       });
       setCreatedLawnId(data.lawn._id);
@@ -76,13 +77,12 @@ const CreateLawnPage = () => {
       <div className="flex items-center gap-3 mb-8">
         {["Venue Details", "Upload Photos"].map((label, i) => (
           <div key={label} className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-              step > i + 1
-                ? "bg-green-500 text-white"
-                : step === i + 1
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-400"
-            }`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all ${step > i + 1
+              ? "bg-green-500 text-white"
+              : step === i + 1
+                ? "bg-primary text-white"
+                : "bg-gray-100 text-gray-400"
+              }`}>
               {step > i + 1 ? "✓" : i + 1}
             </div>
             <span className={`text-sm font-medium ${step === i + 1 ? "text-primary" : "text-gray-400"}`}>
@@ -117,8 +117,22 @@ const CreateLawnPage = () => {
 
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Full Address *</label>
-              <input name="address" value={form.address} onChange={handleChange}
-                placeholder="Street, Area, City, PIN" className="input-field" required />
+              <AddressAutocomplete
+                value={form.address}
+                onChange={(val) => setForm((p) => ({ ...p, address: val }))}
+                onSelect={({ address, city }) => {
+                  setForm((p) => ({
+                    ...p,
+                    address,
+                    city: city || p.city,
+                  }));
+                }}
+                placeholder="Start typing the lawn address..."
+                required
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Select from the dropdown for automatic map location detection.
+              </p>
             </div>
 
             <div className="sm:col-span-2">
@@ -147,11 +161,10 @@ const CreateLawnPage = () => {
                 const active = form.amenities.includes(a);
                 return (
                   <button key={a} type="button" onClick={() => toggleAmenity(a)}
-                    className={`text-sm px-3 py-1.5 rounded-full border font-medium transition-all ${
-                      active
-                        ? "bg-primary text-white border-primary"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
-                    }`}>
+                    className={`text-sm px-3 py-1.5 rounded-full border font-medium transition-all ${active
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+                      }`}>
                     {a}
                   </button>
                 );

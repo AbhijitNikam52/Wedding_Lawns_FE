@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchLawnById, updateLawn } from "../../services/lawnService";
 import PhotoUploader from "../../components/ui/PhotoUploader";
+import AddressAutocomplete from "../../components/ui/AddressAutocomplete";
 import Spinner from "../../components/ui/Spinner";
 import toast from "react-hot-toast";
 
@@ -11,12 +12,12 @@ const AMENITY_OPTIONS = [
 ];
 
 const EditLawnPage = () => {
-  const { id }   = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [form, setForm] = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("details"); // "details" | "photos"
 
   useEffect(() => {
@@ -24,14 +25,14 @@ const EditLawnPage = () => {
       .then((data) => {
         const l = data.lawn;
         setForm({
-          name:        l.name,
-          city:        l.city,
-          address:     l.address,
-          capacity:    l.capacity,
+          name: l.name,
+          city: l.city,
+          address: l.address,
+          capacity: l.capacity,
           pricePerDay: l.pricePerDay,
           description: l.description || "",
-          amenities:   l.amenities   || [],
-          photos:      l.photos      || [],
+          amenities: l.amenities || [],
+          photos: l.photos || [],
         });
       })
       .catch(() => toast.error("Failed to load lawn"))
@@ -55,7 +56,7 @@ const EditLawnPage = () => {
     try {
       await updateLawn(id, {
         ...form,
-        capacity:    Number(form.capacity),
+        capacity: Number(form.capacity),
         pricePerDay: Number(form.pricePerDay),
       });
       toast.success("Lawn updated successfully!");
@@ -68,7 +69,7 @@ const EditLawnPage = () => {
   };
 
   if (loading) return <Spinner text="Loading lawn details..." />;
-  if (!form)   return null;
+  if (!form) return null;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -81,9 +82,8 @@ const EditLawnPage = () => {
       <div className="flex rounded-xl border border-gray-200 overflow-hidden mb-6">
         {["details", "photos"].map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-all ${
-              activeTab === tab ? "bg-primary text-white" : "bg-white text-gray-500 hover:bg-purple-50"
-            }`}>
+            className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-all ${activeTab === tab ? "bg-primary text-white" : "bg-white text-gray-500 hover:bg-purple-50"
+              }`}>
             {tab === "details" ? "📋 Venue Details" : "📸 Photos"}
           </button>
         ))}
@@ -110,8 +110,19 @@ const EditLawnPage = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-              <input name="address" value={form.address} onChange={handleChange}
-                className="input-field" required />
+              <AddressAutocomplete
+                value={form.address}
+                onChange={(val) => setForm((p) => ({ ...p, address: val }))}
+                onSelect={({ address, city }) => {
+                  setForm((p) => ({
+                    ...p,
+                    address,
+                    city: city || p.city,
+                  }));
+                }}
+                placeholder="Start typing the lawn address..."
+                required
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Price Per Day (₹) *</label>
@@ -135,11 +146,10 @@ const EditLawnPage = () => {
                 const active = form.amenities.includes(a);
                 return (
                   <button key={a} type="button" onClick={() => toggleAmenity(a)}
-                    className={`text-sm px-3 py-1.5 rounded-full border font-medium transition-all ${
-                      active
-                        ? "bg-primary text-white border-primary"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
-                    }`}>
+                    className={`text-sm px-3 py-1.5 rounded-full border font-medium transition-all ${active
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary"
+                      }`}>
                     {a}
                   </button>
                 );

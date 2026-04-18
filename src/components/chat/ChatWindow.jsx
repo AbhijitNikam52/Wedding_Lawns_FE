@@ -7,7 +7,7 @@ import MessageBubble from "./MessageBubble";
 import Spinner from "../ui/Spinner";
 import toast from "react-hot-toast";
 
-const ChatWindow = ({ lawnId, lawn: propLawn, currentUser }) => {
+const ChatWindow = ({ lawnId, lawn: propLawn, currentUser, customerId: propCustomerId }) => {
   const { socket }              = useSocket();
   const [messages,   setMessages]   = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -25,7 +25,7 @@ const ChatWindow = ({ lawnId, lawn: propLawn, currentUser }) => {
     setLoading(true);
     try {
       const [histData] = await Promise.all([
-        fetchChatHistory(lawnId),
+        fetchChatHistory(lawnId, propCustomerId),
         !propLawn && fetchLawnById(lawnId).then((d) => setLawn(d.lawn)),
       ]);
       setMessages(histData.messages);
@@ -38,6 +38,8 @@ const ChatWindow = ({ lawnId, lawn: propLawn, currentUser }) => {
             ? firstMsg.receiverId._id
             : firstMsg.senderId._id;
         setReceiverId(rid);
+      } else if (propCustomerId) {
+        setReceiverId(propCustomerId);
       }
 
       // Mark messages as read
@@ -47,7 +49,7 @@ const ChatWindow = ({ lawnId, lawn: propLawn, currentUser }) => {
     } finally {
       setLoading(false);
     }
-  }, [lawnId, currentUser, propLawn]);
+  }, [lawnId, currentUser, propLawn, propCustomerId]);
 
   useEffect(() => {
     loadHistory();
@@ -76,6 +78,14 @@ const ChatWindow = ({ lawnId, lawn: propLawn, currentUser }) => {
     const onReceive = (msg) => {
       setMessages((prev) => {
         if (prev.find((m) => m._id === msg._id)) return prev;
+        
+        // Remove temp message if sender matches (avoid duplicate)
+        const isMine = (msg.senderId._id || msg.senderId) === currentUser._id;
+        if (isMine) {
+          const filtered = prev.filter(m => !(m.isTemp && m.message === msg.message));
+          return [...filtered, msg];
+        }
+        
         return [...prev, msg];
       });
       // Mark as read immediately if window is open

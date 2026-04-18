@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useAuth }   from "../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { fetchLawnById } from "../../services/lawnService";
 import ConversationList from "../../components/chat/ConversationList";
-import ChatWindow       from "../../components/chat/ChatWindow";
+import ChatWindow from "../../components/chat/ChatWindow";
 import Spinner from "../../components/ui/Spinner";
 
 const ChatPage = () => {
-  const { lawnId }          = useParams();
-  const { user }            = useAuth();
-  const [lawn, setLawn]     = useState(null);
+  const { lawnId } = useParams();
+  const { user } = useAuth();
+  const [lawn, setLawn] = useState(null);
   const [loading, setLoading] = useState(!!lawnId);
   const [activeLawnId, setActiveLawnId] = useState(lawnId || null);
-  const [activeLawn,   setActiveLawn]   = useState(null);
+  const [activeLawn, setActiveLawn] = useState(null);
+  const [activeCustomerId, setActiveCustomerId] = useState(null);
 
   // If lawnId in URL, load that lawn info
   useEffect(() => {
@@ -27,8 +28,9 @@ const ChatPage = () => {
   }, [lawnId]);
 
   const handleSelectConversation = (convo) => {
-    setActiveLawnId(convo.lawnId._id);
+    setActiveLawnId(convo.lawnId._id || convo.lawnId);
     setActiveLawn(convo.lawnId);
+    setActiveCustomerId(convo.otherUser?._id || convo.otherUser);
   };
 
   if (loading) return <Spinner text="Loading chat..." />;
@@ -58,6 +60,7 @@ const ChatPage = () => {
               lawnId={activeLawnId}
               lawn={activeLawn}
               currentUser={user}
+              customerId={activeCustomerId}
             />
           ) : (
             <NoChatSelected />

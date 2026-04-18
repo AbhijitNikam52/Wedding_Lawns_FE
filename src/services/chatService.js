@@ -1,8 +1,10 @@
 import api from "./api";
 
 // Get message history for a lawn conversation
-export const fetchChatHistory = (lawnId) =>
-  api.get(`/chat/${lawnId}`).then((r) => r.data);
+export const fetchChatHistory = (lawnId, customerId = null) => {
+  const url = customerId ? `/chat/${lawnId}?customerId=${customerId}` : `/chat/${lawnId}`;
+  return api.get(url).then((r) => r.data);
+};
 
 // Send a message via REST (also handled via socket, but REST persists reliably)
 export const sendMessage = (lawnId, message, receiverId) =>

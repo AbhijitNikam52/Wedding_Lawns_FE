@@ -29,6 +29,9 @@ const Navbar = () => {
 
             {/* Desktop nav links */}
             <div className="hidden lg:flex items-center gap-6 text-sm font-medium">
+              <Link to="/" className="hover:text-secondary transition-colors">
+                Home
+              </Link>
               <Link to="/lawns" className="hover:text-secondary transition-colors">
                 Browse Lawns
               </Link>
@@ -56,8 +59,15 @@ const Navbar = () => {
                   )}
 
                   <div className="flex items-center gap-3">
-                    <Link to="/profile" className="text-secondary hover:text-white transition-colors font-medium">
-                      👤 {user?.name}
+                    <Link to="/profile" className="text-secondary hover:text-white transition-colors font-medium flex items-center gap-2">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} alt={user?.name} className="w-8 h-8 rounded-full object-cover border border-secondary" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-secondary text-dark flex items-center justify-center font-bold text-sm">
+                          {user?.name?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span>{user?.name}</span>
                     </Link>
                     <button
                       onClick={handleLogout}

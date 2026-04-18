@@ -52,9 +52,13 @@ const MobileMenu = ({ open, onClose }) => {
         {/* User info */}
         {isAuthenticated && (
           <div className="flex items-center gap-3 px-5 py-4 bg-purple-50 border-b border-purple-100">
-            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
+            {user?.profileImage ? (
+              <img src={user.profileImage} alt={user?.name} className="w-10 h-10 rounded-full object-cover border border-primary flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0">
               <p className="font-semibold text-dark text-sm truncate">{user?.name}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>

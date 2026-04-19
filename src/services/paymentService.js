@@ -1,8 +1,8 @@
 import api from "./api";
 
-// Create a Razorpay order for a confirmed booking
-export const createRazorpayOrder = (bookingId) =>
-  api.post("/payment/create-order", { bookingId }).then((r) => r.data);
+// Create a Razorpay order for a confirmed booking (supports partial payment)
+export const createRazorpayOrder = (bookingId, amount) =>
+  api.post("/payment/create-order", { bookingId, amount }).then((r) => r.data);
 
 // Verify payment signature after Razorpay checkout completes
 export const verifyPayment = (data) =>

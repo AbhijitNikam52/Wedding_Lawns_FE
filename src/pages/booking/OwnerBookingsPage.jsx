@@ -137,10 +137,22 @@ const OwnerBookingCard = ({ booking, onAction, loading }) => {
             <Detail label="👥 Guests"     value={booking.guestCount || "—"} />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-sm">
             <Detail label="📅 Event Date"  value={new Date(booking.eventDate).toDateString()} />
-            <Detail label="💰 Amount"      value={`₹${booking.totalAmount?.toLocaleString()}`} />
+            <Detail label="💰 Total Amount" value={`₹${booking.totalAmount?.toLocaleString()}`} />
+            <Detail label="💸 Paid" value={`₹${(booking.paidAmount || 0).toLocaleString()}`} />
+            <Detail label="🛑 Remaining" value={`₹${(booking.remainingAmount ?? booking.totalAmount).toLocaleString()}`} />
             <Detail label="🗓️ Requested"   value={new Date(booking.createdAt).toLocaleDateString()} />
+            {booking.paymentStatus && (
+              <Detail 
+                label="💳 Payment Status" 
+                value={
+                  <span className={`uppercase text-[10px] font-bold ${booking.paymentStatus === 'paid' ? 'text-green-600' : booking.paymentStatus === 'partial' ? 'text-yellow-600' : 'text-gray-400'}`}>
+                    {booking.paymentStatus}
+                  </span>
+                } 
+              />
+            )}
           </div>
 
           {booking.specialRequests && (

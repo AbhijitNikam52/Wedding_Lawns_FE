@@ -6,6 +6,7 @@ import {
   deleteUser,
 } from "../../services/adminService";
 import Spinner from "../ui/Spinner";
+import ConfirmModal from "../ui/ConfirmModal";
 import toast from "react-hot-toast";
 
 const ROLES = ["all", "user", "owner", "admin"];
@@ -17,6 +18,7 @@ const AdminUsersTab = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [actionId, setActionId] = useState(null);
   const [total,    setTotal]    = useState(0);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,18 +38,26 @@ const AdminUsersTab = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleRoleChange = async (userId, newRole) => {
-    if (!window.confirm(`Change this user's role to "${newRole}"?`)) return;
-    setActionId(userId);
-    try {
-      await updateUserRole(userId, newRole);
-      toast.success(`Role updated to ${newRole}`);
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
-    } finally {
-      setActionId(null);
-    }
+  const handleRoleChange = (userId, newRole) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Change Role?",
+      message: `Change this user's role to "${newRole}"?`,
+      confirmLabel: "Change",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setActionId(userId);
+        try {
+          await updateUserRole(userId, newRole);
+          toast.success(`Role updated to ${newRole}`);
+          load();
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed");
+        } finally {
+          setActionId(null);
+        }
+      }
+    });
   };
 
   const handleSuspend = async (userId, isSuspended) => {
@@ -63,18 +73,27 @@ const AdminUsersTab = () => {
     }
   };
 
-  const handleDelete = async (userId, name) => {
-    if (!window.confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
-    setActionId(userId);
-    try {
-      await deleteUser(userId);
-      toast.success("User deleted");
-      load();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
-    } finally {
-      setActionId(null);
-    }
+  const handleDelete = (userId, name) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete User?",
+      message: `Permanently delete "${name}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      confirmClass: "bg-red-500 text-white hover:bg-red-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setActionId(userId);
+        try {
+          await deleteUser(userId);
+          toast.success("User deleted");
+          load();
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed");
+        } finally {
+          setActionId(null);
+        }
+      }
+    });
   };
 
   const roleBadge = (role) => {
@@ -213,6 +232,11 @@ const AdminUsersTab = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        {...confirmState}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 };

@@ -120,9 +120,11 @@ const BookingCard = ({ booking, onCancel, cancelling }) => {
             <BookingStatusBadge status={booking.status} />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 text-sm mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 text-sm mb-3">
             <Info label="Event Date"  value={new Date(booking.eventDate).toDateString()} />
-            <Info label="Amount"      value={`₹${booking.totalAmount?.toLocaleString()}`} />
+            <Info label="Total Amount" value={`₹${booking.totalAmount?.toLocaleString()}`} />
+            <Info label="Paid" value={`₹${(booking.paidAmount || 0).toLocaleString()}`} />
+            <Info label="Remaining" value={`₹${(booking.remainingAmount ?? booking.totalAmount).toLocaleString()}`} className="text-red-500" />
             <Info label="Guests"      value={booking.guestCount || "—"} />
             <Info label="Booked On"   value={new Date(booking.createdAt).toLocaleDateString()} />
             {booking.cancelReason && (
@@ -139,21 +141,21 @@ const BookingCard = ({ booking, onCancel, cancelling }) => {
               View Details
             </Link>
 
-            {booking.status === "confirmed" && !booking.paymentId && (
+            {booking.status === "confirmed" && booking.paymentStatus !== "paid" && (
               <Link
                 to={`/bookings/${booking._id}/pay`}
                 className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition-all font-medium"
               >
-                💳 Pay Now
+                💳 {booking.paidAmount > 0 ? "Pay Remaining" : "Pay Now"}
               </Link>
             )}
 
-            {booking.paymentId && (
+            {booking.paidAmount > 0 && (
               <Link
                 to="/payment/history"
                 className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-all font-medium"
               >
-                🧾 View Receipt
+                🧾 View Receipts
               </Link>
             )}
 

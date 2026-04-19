@@ -2,19 +2,24 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   fetchPendingLawns,
+  fetchRejectedLawns,
   approveLawnAdmin,
+  unapproveLawnAdmin,
   rejectLawnAdmin,
 } from "../../services/adminService";
 import { fetchLawns } from "../../services/lawnService";
 import Spinner from "../ui/Spinner";
+import ConfirmModal from "../ui/ConfirmModal";
 import toast from "react-hot-toast";
 
 const AdminLawnsTab = () => {
   const [pending,   setPending]   = useState([]);
   const [approved,  setApproved]  = useState([]);
-  const [view,      setView]      = useState("pending"); // "pending" | "approved"
+  const [rejected,  setRejected]  = useState([]);
+  const [view,      setView]      = useState("pending"); // "pending" | "approved" | "rejected"
   const [loading,   setLoading]   = useState(true);
   const [actionId,  setActionId]  = useState(null);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
 
   const loadPending = async () => {
     const data = await fetchPendingLawns();
@@ -26,42 +31,93 @@ const AdminLawnsTab = () => {
     setApproved(data.lawns);
   };
 
-  useEffect(() => {
-    Promise.all([loadPending(), loadApproved()])
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleApprove = async (lawnId, lawnName) => {
-    setActionId(lawnId);
-    try {
-      await approveLawnAdmin(lawnId);
-      toast.success(`"${lawnName}" is now live!`);
-      await Promise.all([loadPending(), loadApproved()]);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
-    } finally {
-      setActionId(null);
-    }
+  const loadRejected = async () => {
+    const data = await fetchRejectedLawns();
+    setRejected(data.lawns);
   };
 
-  const handleReject = async (lawnId, lawnName) => {
-    if (!window.confirm(`Reject and delete "${lawnName}"?`)) return;
-    setActionId(lawnId);
-    try {
-      await rejectLawnAdmin(lawnId);
-      toast.success(`"${lawnName}" rejected and removed.`);
-      await loadPending();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed");
-    } finally {
-      setActionId(null);
-    }
+  const loadAll = async () => {
+    setLoading(true);
+    await Promise.all([loadPending(), loadApproved(), loadRejected()]).catch(console.error);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const handleApprove = (lawnId, lawnName) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Approve Venue?",
+      message: `Are you sure you want to approve "${lawnName}" and make it live?`,
+      confirmLabel: "Approve",
+      confirmClass: "bg-green-500 text-white hover:bg-green-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setActionId(lawnId);
+        try {
+          await approveLawnAdmin(lawnId);
+          toast.success(`"${lawnName}" is now live!`);
+          await loadAll();
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed");
+        } finally {
+          setActionId(null);
+        }
+      }
+    });
+  };
+
+  const handleUnapprove = (lawnId, lawnName) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Change Status to Pending?",
+      message: `Are you sure you want to move "${lawnName}" to pending status?`,
+      confirmLabel: "Set Pending",
+      confirmClass: "bg-yellow-500 text-white hover:bg-yellow-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setActionId(lawnId);
+        try {
+          await unapproveLawnAdmin(lawnId);
+          toast.success(`"${lawnName}" moved to pending.`);
+          await loadAll();
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed");
+        } finally {
+          setActionId(null);
+        }
+      }
+    });
+  };
+
+  const handleReject = (lawnId, lawnName) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Reject Venue?",
+      message: `Are you sure you want to reject "${lawnName}"?`,
+      confirmLabel: "Reject",
+      confirmClass: "bg-red-500 text-white hover:bg-red-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setActionId(lawnId);
+        try {
+          await rejectLawnAdmin(lawnId);
+          toast.success(`"${lawnName}" has been rejected.`);
+          await loadAll();
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed");
+        } finally {
+          setActionId(null);
+        }
+      }
+    });
   };
 
   if (loading) return <Spinner text="Loading venues..." />;
 
-  const lawns = view === "pending" ? pending : approved;
+  const lawns = view === "pending" ? pending : view === "approved" ? approved : rejected;
 
   return (
     <div className="space-y-4">
@@ -70,6 +126,7 @@ const AdminLawnsTab = () => {
         {[
           { key: "pending",  label: `⏳ Pending (${pending.length})` },
           { key: "approved", label: `✅ Approved (${approved.length})` },
+          { key: "rejected", label: `❌ Rejected (${rejected.length})` },
         ].map((v) => (
           <button
             key={v.key}
@@ -99,7 +156,7 @@ const AdminLawnsTab = () => {
         <div className="text-center py-16 bg-purple-50 rounded-2xl">
           <p className="text-4xl mb-3">🏡</p>
           <p className="text-gray-400 text-sm">
-            {view === "pending" ? "No venues pending approval." : "No approved venues yet."}
+            {view === "pending" ? "No venues pending approval." : view === "approved" ? "No approved venues yet." : "No rejected venues."}
           </p>
         </div>
       )}
@@ -132,9 +189,11 @@ const AdminLawnsTab = () => {
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
                       lawn.isApproved
                         ? "bg-green-100 text-green-700"
+                        : lawn.isRejected
+                        ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}>
-                      {lawn.isApproved ? "✅ Live" : "⏳ Pending"}
+                      {lawn.isApproved ? "✅ Live" : lawn.isRejected ? "❌ Rejected" : "⏳ Pending"}
                     </span>
                   </div>
 
@@ -155,22 +214,31 @@ const AdminLawnsTab = () => {
                       👁️ Preview
                     </Link>
                     {!lawn.isApproved && (
-                      <>
-                        <button
-                          onClick={() => handleApprove(lawn._id, lawn.name)}
-                          disabled={busy}
-                          className="text-xs bg-green-500 text-white px-4 py-1.5 rounded-lg hover:bg-green-600 transition-all font-semibold disabled:opacity-50"
-                        >
-                          {busy ? "..." : "✅ Approve"}
-                        </button>
-                        <button
-                          onClick={() => handleReject(lawn._id, lawn.name)}
-                          disabled={busy}
-                          className="text-xs bg-red-500 text-white px-4 py-1.5 rounded-lg hover:bg-red-600 transition-all font-semibold disabled:opacity-50"
-                        >
-                          {busy ? "..." : "❌ Reject"}
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleApprove(lawn._id, lawn.name)}
+                        disabled={busy}
+                        className="text-xs bg-green-500 text-white px-4 py-1.5 rounded-lg hover:bg-green-600 transition-all font-semibold disabled:opacity-50"
+                      >
+                        {busy ? "..." : "✅ Approve"}
+                      </button>
+                    )}
+                    {(lawn.isApproved || lawn.isRejected) && (
+                      <button
+                        onClick={() => handleUnapprove(lawn._id, lawn.name)}
+                        disabled={busy}
+                        className="text-xs bg-yellow-500 text-white px-4 py-1.5 rounded-lg hover:bg-yellow-600 transition-all font-semibold disabled:opacity-50"
+                      >
+                        {busy ? "..." : "⏳ Set Pending"}
+                      </button>
+                    )}
+                    {!lawn.isRejected && (
+                      <button
+                        onClick={() => handleReject(lawn._id, lawn.name)}
+                        disabled={busy}
+                        className="text-xs bg-red-500 text-white px-4 py-1.5 rounded-lg hover:bg-red-600 transition-all font-semibold disabled:opacity-50"
+                      >
+                        {busy ? "..." : "❌ Reject"}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -179,6 +247,11 @@ const AdminLawnsTab = () => {
           );
         })}
       </div>
+
+      <ConfirmModal
+        {...confirmState}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 };

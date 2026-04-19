@@ -1,24 +1,34 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteLawn } from "../../services/lawnService";
+import ConfirmModal from "../ui/ConfirmModal";
 import toast from "react-hot-toast";
 
 const OwnerLawnsList = ({ lawns, setLawns }) => {
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
 
-  const handleDelete = async (lawnId, lawnName) => {
-    if (!window.confirm(`Delete "${lawnName}"? This cannot be undone.`)) return;
-
-    setDeletingId(lawnId);
-    try {
-      await deleteLawn(lawnId);
-      setLawns((prev) => prev.filter((l) => l._id !== lawnId));
-      toast.success("Lawn deleted successfully");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Delete failed");
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (lawnId, lawnName) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Lawn?",
+      message: `Delete "${lawnName}"? This cannot be undone.`,
+      confirmLabel: "Delete",
+      confirmClass: "bg-red-500 text-white hover:bg-red-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setDeletingId(lawnId);
+        try {
+          await deleteLawn(lawnId);
+          setLawns((prev) => prev.filter((l) => l._id !== lawnId));
+          toast.success("Lawn deleted successfully");
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Delete failed");
+        } finally {
+          setDeletingId(null);
+        }
+      }
+    });
   };
 
   if (lawns.length === 0) {
@@ -131,6 +141,11 @@ const OwnerLawnsList = ({ lawns, setLawns }) => {
           </div>
         </div>
       ))}
+
+      <ConfirmModal
+        {...confirmState}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 };

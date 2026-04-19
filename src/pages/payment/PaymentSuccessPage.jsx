@@ -38,10 +38,12 @@ const PaymentSuccessPage = () => {
 
         {/* Booking details */}
         {booking && (
-          <div className="bg-green-50 rounded-xl p-4 text-left space-y-2 mb-6">
+          <div className="bg-green-50 rounded-xl p-4 text-left space-y-1 mb-6">
             <DetailRow label="Venue"       value={lawn?.name} />
             <DetailRow label="Event Date"  value={new Date(booking.eventDate).toDateString()} />
-            <DetailRow label="Amount Paid" value={`₹${booking.totalAmount?.toLocaleString()}`} bold green />
+            <DetailRow label="Total Amount" value={`₹${booking.totalAmount?.toLocaleString()}`} />
+            <DetailRow label="Paid Just Now" value={`₹${booking.paidAmount?.toLocaleString()}`} bold green />
+            <DetailRow label="Remaining"    value={`₹${booking.remainingAmount?.toLocaleString()}`} bold red={booking.remainingAmount > 0} />
             <DetailRow label="Booking ID"  value={booking._id} mono />
           </div>
         )}
@@ -63,10 +65,10 @@ const PaymentSuccessPage = () => {
   );
 };
 
-const DetailRow = ({ label, value, mono, bold, green }) => (
+const DetailRow = ({ label, value, mono, bold, green, red }) => (
   <div className="flex justify-between items-center text-sm py-1.5 border-b border-green-100 last:border-0">
     <span className="text-gray-500">{label}</span>
-    <span className={`text-right ml-4 truncate max-w-[55%] ${mono ? "font-mono text-xs" : ""} ${bold ? "font-bold" : "font-medium"} ${green ? "text-green-600" : "text-dark"}`}>
+    <span className={`text-right ml-4 truncate max-w-[55%] ${mono ? "font-mono text-xs" : ""} ${bold ? "font-bold" : "font-medium"} ${green ? "text-green-600" : red ? "text-red-600" : "text-dark"}`}>
       {value}
     </span>
   </div>

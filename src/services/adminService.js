@@ -21,11 +21,17 @@ export const deleteUser = (userId) =>
 export const fetchPendingLawns = () =>
   api.get("/lawns/admin/pending").then((r) => r.data);
 
+export const fetchRejectedLawns = () =>
+  api.get("/lawns/admin/rejected").then((r) => r.data);
+
 export const approveLawnAdmin = (lawnId) =>
   api.put(`/lawns/admin/${lawnId}/approve`).then((r) => r.data);
 
+export const unapproveLawnAdmin = (lawnId) =>
+  api.put(`/lawns/admin/${lawnId}/unapprove`).then((r) => r.data);
+
 export const rejectLawnAdmin = (lawnId) =>
-  api.delete(`/lawns/${lawnId}`).then((r) => r.data);
+  api.put(`/lawns/admin/${lawnId}/reject`).then((r) => r.data);
 
 // ─── Bookings ─────────────────────────────────────────────
 export const fetchAllBookingsAdmin = (params = {}) =>

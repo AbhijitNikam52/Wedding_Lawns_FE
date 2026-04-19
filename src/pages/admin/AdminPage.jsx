@@ -122,6 +122,13 @@ const OverviewTab = ({ stats, onTabChange }) => {
             color="text-yellow-600"
             bg="bg-yellow-100"
           />
+          <DonutStat
+            value={stats?.lawns.rejected}
+            total={stats?.lawns.total}
+            label="Rejected"
+            color="text-red-600"
+            bg="bg-red-100"
+          />
         </div>
         {stats?.lawns.pending > 0 && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mt-2">

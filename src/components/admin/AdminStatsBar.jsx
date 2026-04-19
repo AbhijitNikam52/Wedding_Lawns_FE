@@ -12,7 +12,7 @@ const AdminStatsBar = ({ stats }) => {
       icon:  "🏡",
       label: "Total Venues",
       value: stats.lawns.total.toLocaleString(),
-      sub:   `${stats.lawns.approved} live · ${stats.lawns.pending} pending`,
+      sub:   `${stats.lawns.approved} live · ${stats.lawns.pending} pending${stats.lawns.rejected ? ` · ${stats.lawns.rejected} rejected` : ''}`,
       color: "bg-blue-50 border-blue-100",
       val:   "text-blue-600",
     },

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { uploadLawnPhotos, deleteLawnPhoto, reorderLawnPhotos } from "../../services/uploadService";
+import ConfirmModal from "./ConfirmModal";
 import toast from "react-hot-toast";
 
 const PhotoUploader = ({ lawnId, initialPhotos = [], onPhotosChange }) => {
@@ -7,6 +8,7 @@ const PhotoUploader = ({ lawnId, initialPhotos = [], onPhotosChange }) => {
   const [uploading, setUploading] = useState(false);
   const [deleting,  setDeleting]  = useState(null); // URL of photo being deleted
   const [dragOver,  setDragOver]  = useState(false);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
   const inputRef = useRef();
 
   const MAX = 10;
@@ -43,19 +45,28 @@ const PhotoUploader = ({ lawnId, initialPhotos = [], onPhotosChange }) => {
   };
 
   // ── Delete handler ───────────────────────────────────────
-  const handleDelete = async (photoUrl) => {
-    if (!window.confirm("Delete this photo?")) return;
-    setDeleting(photoUrl);
-    try {
-      const data = await deleteLawnPhoto(lawnId, photoUrl);
-      setPhotos(data.photos);
-      onPhotosChange?.(data.photos);
-      toast.success("Photo deleted");
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Delete failed");
-    } finally {
-      setDeleting(null);
-    }
+  const handleDelete = (photoUrl) => {
+    setConfirmState({
+      isOpen: true,
+      title: "Delete Photo?",
+      message: "Are you sure you want to delete this photo?",
+      confirmLabel: "Delete",
+      confirmClass: "bg-red-500 text-white hover:bg-red-600",
+      onConfirm: async () => {
+        setConfirmState({ isOpen: false });
+        setDeleting(photoUrl);
+        try {
+          const data = await deleteLawnPhoto(lawnId, photoUrl);
+          setPhotos(data.photos);
+          onPhotosChange?.(data.photos);
+          toast.success("Photo deleted");
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Delete failed");
+        } finally {
+          setDeleting(null);
+        }
+      }
+    });
   };
 
   // ── Drag-and-drop ────────────────────────────────────────
@@ -191,6 +202,11 @@ const PhotoUploader = ({ lawnId, initialPhotos = [], onPhotosChange }) => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        {...confirmState}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
     </div>
   );
 };

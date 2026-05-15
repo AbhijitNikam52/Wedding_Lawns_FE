@@ -4,12 +4,14 @@ import { fetchMyBookings, updateBookingStatus } from "../../services/bookingServ
 import BookingStatusBadge from "../../components/ui/BookingStatusBadge";
 import Spinner from "../../components/ui/Spinner";
 import toast from "react-hot-toast";
+import PayslipModal from "../../components/payment/PayslipModal";
 
 const MyBookingsPage = () => {
   const [bookings, setBookings] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [filter,   setFilter]   = useState("all");
   const [cancelling, setCancelling] = useState(null); // bookingId being cancelled
+  const [activeBooking, setActiveBooking] = useState(null); // booking for payslip modal
 
   const load = () => {
     setLoading(true);
@@ -85,16 +87,25 @@ const MyBookingsPage = () => {
               booking={booking}
               onCancel={handleCancel}
               cancelling={cancelling === booking._id}
+              onViewPayslip={() => setActiveBooking(booking)}
             />
           ))}
         </div>
+      )}
+
+      {/* Payslip Modal */}
+      {activeBooking && (
+        <PayslipModal
+          bookingData={activeBooking}
+          onClose={() => setActiveBooking(null)}
+        />
       )}
     </div>
   );
 };
 
 // ── Booking Card ─────────────────────────────────────────
-const BookingCard = ({ booking, onCancel, cancelling }) => {
+const BookingCard = ({ booking, onCancel, cancelling, onViewPayslip }) => {
   const lawn  = booking.lawnId;
   const canCancel = ["pending", "confirmed"].includes(booking.status);
 
@@ -151,11 +162,20 @@ const BookingCard = ({ booking, onCancel, cancelling }) => {
             )}
 
             {booking.paidAmount > 0 && (
+              <button
+                onClick={onViewPayslip}
+                className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-all font-medium flex items-center gap-1"
+              >
+                🧾 View Payslip
+              </button>
+            )}
+
+            {booking.paidAmount > 0 && (
               <Link
                 to="/payment/history"
-                className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-all font-medium"
+                className="text-xs border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-all font-medium"
               >
-                🧾 View Receipts
+                Payment History
               </Link>
             )}
 

@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { fetchPaymentHistory } from "../../services/paymentService";
 import { useAuth } from "../../context/AuthContext";
 import Spinner from "../../components/ui/Spinner";
+import PayslipModal from "../../components/payment/PayslipModal";
 
 const PaymentHistoryPage = () => {
   const { user }    = useAuth();
   const [payments,  setPayments]  = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [total,     setTotal]     = useState(0);
+  const [activePaymentId, setActivePaymentId] = useState(null);
 
   useEffect(() => {
     fetchPaymentHistory()
@@ -55,16 +57,29 @@ const PaymentHistoryPage = () => {
       ) : (
         <div className="space-y-4">
           {payments.map((payment) => (
-            <PaymentCard key={payment._id} payment={payment} isOwner={isOwner} />
+            <PaymentCard 
+              key={payment._id} 
+              payment={payment} 
+              isOwner={isOwner} 
+              onViewPayslip={() => setActivePaymentId(payment._id)}
+            />
           ))}
         </div>
+      )}
+
+      {/* Payslip Modal */}
+      {activePaymentId && (
+        <PayslipModal
+          paymentId={activePaymentId}
+          onClose={() => setActivePaymentId(null)}
+        />
       )}
     </div>
   );
 };
 
 // ── Payment Card ─────────────────────────────────────────
-const PaymentCard = ({ payment, isOwner }) => {
+const PaymentCard = ({ payment, isOwner, onViewPayslip }) => {
   const booking = payment.bookingId;
   const lawn    = booking?.lawnId;
   const paidUser = booking?.userId;
@@ -104,10 +119,16 @@ const PaymentCard = ({ payment, isOwner }) => {
           <p className="text-xs text-gray-400 mt-0.5">INR</p>
           <Link
             to={`/bookings/${booking._id}/confirmation`}
-            className="text-xs text-primary hover:underline mt-2 inline-block"
+            className="text-xs text-primary hover:underline block mb-2"
           >
             View Booking →
           </Link>
+          <button
+            onClick={onViewPayslip}
+            className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 transition-all font-medium flex items-center gap-1 ml-auto"
+          >
+            🧾 View Payslip
+          </button>
         </div>
       </div>
     </div>

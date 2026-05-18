@@ -11,8 +11,13 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    let { name, value } = e.target;
+    if (name === "email" || name === "password") {
+      value = value.replace(/\s/g, "");
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,9 +40,9 @@ const LoginPage = () => {
       {/* Left pane - Image */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-purple-900 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-purple-900/90 z-10"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80" 
-          alt="Wedding Event" 
+        <img
+          src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+          alt="Wedding Event"
           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
         />
         <div className="relative z-20 flex flex-col justify-center px-16 xl:px-24 text-white">

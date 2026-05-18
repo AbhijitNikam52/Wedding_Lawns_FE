@@ -8,6 +8,9 @@ import ErrorBoundary  from "./components/ErrorBoundary";
 import { AuthProvider }   from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
 import "./index.css";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

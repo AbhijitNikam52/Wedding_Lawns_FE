@@ -5,26 +5,42 @@ import toast from "react-hot-toast";
 
 const RegisterPage = () => {
   const { register } = useAuth();
-  const navigate      = useNavigate();
-  const [params]      = useSearchParams();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
 
   const [form, setForm] = useState({
-    name:     "",
-    email:    "",
+    name: "",
+    email: "",
     password: "",
-    phone:    "",
-    role:     params.get("role") === "owner" ? "owner" : "user",
+    phone: "",
+    role: params.get("role") === "owner" ? "owner" : "user",
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (e) =>
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    let { name, value } = e.target;
+    if (name === "email" || name === "password") {
+      value = value.replace(/\s/g, "");
+    }
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password.length < 6) {
-      return toast.error("Password must be at least 6 characters");
+
+    const { password } = form;
+    if (password.length < 8) {
+      return toast.error("Password must be at least 8 characters long.");
+    }
+    if (!/[A-Z]/.test(password)) {
+      return toast.error("Password must contain at least one capital letter.");
+    }
+    if (!/[0-9]/.test(password)) {
+      return toast.error("Password must contain at least one number.");
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>\-_]/.test(password)) {
+      return toast.error("Password must contain at least one symbol.");
     }
     setLoading(true);
     try {
@@ -55,25 +71,25 @@ const RegisterPage = () => {
           <div className="mb-8">
             <label className="block text-sm font-semibold text-gray-700 mb-3 text-center">How do you want to use WeddingLawn?</label>
             <div className="grid grid-cols-2 gap-4">
-               {/* User Card */}
-               <div 
-                 onClick={() => setForm(p => ({...p, role: 'user'}))}
-                 className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${form.role === 'user' ? 'border-primary bg-purple-50 shadow-md shadow-primary/10 scale-105' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
-               >
-                 <div className={`text-4xl mb-2 transition-transform duration-300 ${form.role === 'user' ? 'scale-110' : ''}`}>🎉</div>
-                 <h3 className={`font-bold ${form.role === 'user' ? 'text-primary' : 'text-gray-700'}`}>Customer</h3>
-                 <p className="text-xs text-gray-500 mt-1">Book venues for your event</p>
-               </div>
-               
-               {/* Owner Card */}
-               <div 
-                 onClick={() => setForm(p => ({...p, role: 'owner'}))}
-                 className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${form.role === 'owner' ? 'border-primary bg-purple-50 shadow-md shadow-primary/10 scale-105' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
-               >
-                 <div className={`text-4xl mb-2 transition-transform duration-300 ${form.role === 'owner' ? 'scale-110' : ''}`}>🏛️</div>
-                 <h3 className={`font-bold ${form.role === 'owner' ? 'text-primary' : 'text-gray-700'}`}>Lawn Owner</h3>
-                 <p className="text-xs text-gray-500 mt-1">List & manage your venues</p>
-               </div>
+              {/* User Card */}
+              <div
+                onClick={() => setForm(p => ({ ...p, role: 'user' }))}
+                className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${form.role === 'user' ? 'border-primary bg-purple-50 shadow-md shadow-primary/10 scale-105' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
+              >
+                <div className={`text-4xl mb-2 transition-transform duration-300 ${form.role === 'user' ? 'scale-110' : ''}`}>🎉</div>
+                <h3 className={`font-bold ${form.role === 'user' ? 'text-primary' : 'text-gray-700'}`}>Customer</h3>
+                <p className="text-xs text-gray-500 mt-1">Book venues for your event</p>
+              </div>
+
+              {/* Owner Card */}
+              <div
+                onClick={() => setForm(p => ({ ...p, role: 'owner' }))}
+                className={`cursor-pointer border-2 rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 ${form.role === 'owner' ? 'border-primary bg-purple-50 shadow-md shadow-primary/10 scale-105' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
+              >
+                <div className={`text-4xl mb-2 transition-transform duration-300 ${form.role === 'owner' ? 'scale-110' : ''}`}>🏛️</div>
+                <h3 className={`font-bold ${form.role === 'owner' ? 'text-primary' : 'text-gray-700'}`}>Lawn Owner</h3>
+                <p className="text-xs text-gray-500 mt-1">List & manage your venues</p>
+              </div>
             </div>
           </div>
 
@@ -108,7 +124,7 @@ const RegisterPage = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">🔒</div>
-                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} placeholder="Min 6 characters" className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm" required />
+                <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} placeholder="Min 8 chars, 1 Uppercase, 1 Symbol, 1 Number" className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm" required />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -141,16 +157,16 @@ const RegisterPage = () => {
 
       {/* Image Section */}
       <div className="hidden lg:flex lg:w-2/5 xl:w-1/2 relative bg-purple-900 overflow-hidden">
-         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 to-primary/80 z-10"></div>
-         <img 
-           src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80" 
-           alt="Wedding Venue" 
-           className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
-         />
-         <div className="relative z-20 flex flex-col justify-center px-16 text-white h-full">
-           <h2 className="text-5xl font-bold mb-6 font-serif leading-tight">Join the finest network of Venues</h2>
-           <p className="text-lg text-purple-100 max-w-md">Whether you're celebrating a lifetime moment or hosting unforgettable events, you're in the right place.</p>
-         </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/90 to-primary/80 z-10"></div>
+        <img
+          src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+          alt="Wedding Venue"
+          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
+        />
+        <div className="relative z-20 flex flex-col justify-center px-16 text-white h-full">
+          <h2 className="text-5xl font-bold mb-6 font-serif leading-tight">Join the finest network of Venues</h2>
+          <p className="text-lg text-purple-100 max-w-md">Whether you're celebrating a lifetime moment or hosting unforgettable events, you're in the right place.</p>
+        </div>
       </div>
     </div>
   );

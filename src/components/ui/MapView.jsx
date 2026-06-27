@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * MapView — renders a Google Maps iframe with a marker at the lawn location.
+ * MapView — renders a Leaflet Map with a marker at the lawn location.
  *
  * Props:
  *   lat            — latitude number
@@ -11,22 +11,102 @@ import { useEffect, useRef, useState } from "react";
  *   height         — CSS height string (default "320px")
  */
 const MapView = ({ lat, lng, lawnName, formattedAddress, height = "320px" }) => {
-    const [loaded, setLoaded] = useState(false);
+    const mapRef = useRef(null);
+    const mapInstance = useRef(null);
+    const [leafletLoaded, setLeafletLoaded] = useState(false);
     const [errored, setErrored] = useState(false);
-    const iframeRef = useRef(null);
 
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-    // Build the embed URL — Google Maps Embed API (free, no billing required for basic embed)
-    const embedUrl = apiKey
-        ? `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${lat},${lng}&zoom=15`
-        : null;
-
-    // Fallback: static map image (no JS API needed)
-    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=600x320&markers=color:purple%7C${lat},${lng}&key=${apiKey}`;
-
-    // Google Maps directions URL (opens in Maps app on mobile)
     const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(lawnName)}`;
+
+    // Dynamically load Leaflet CDN assets
+    useEffect(() => {
+        // Load CSS
+        let link = document.getElementById("leaflet-css");
+        if (!link) {
+            link = document.createElement("link");
+            link.id = "leaflet-css";
+            link.rel = "stylesheet";
+            link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+            document.head.appendChild(link);
+        }
+
+        // Load JS
+        let script = document.getElementById("leaflet-js");
+        if (!script) {
+            script = document.createElement("script");
+            script.id = "leaflet-js";
+            script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+            script.onload = () => setLeafletLoaded(true);
+            script.onerror = () => setErrored(true);
+            document.body.appendChild(script);
+        } else {
+            if (window.L) {
+                setLeafletLoaded(true);
+            } else {
+                const handleScriptLoad = () => setLeafletLoaded(true);
+                const handleScriptError = () => setErrored(true);
+
+                script.addEventListener("load", handleScriptLoad);
+                script.addEventListener("error", handleScriptError);
+
+                return () => {
+                    script.removeEventListener("load", handleScriptLoad);
+                    script.removeEventListener("error", handleScriptError);
+                };
+            }
+        }
+    }, []);
+
+    // Initialize/Update Map
+    useEffect(() => {
+        if (!leafletLoaded || !mapRef.current || !lat || !lng || !window.L) return;
+
+        // Clean up previous map instance
+        if (mapInstance.current) {
+            mapInstance.current.remove();
+            mapInstance.current = null;
+        }
+
+        try {
+            const L = window.L;
+
+            // Set up map
+            const map = L.map(mapRef.current).setView([lat, lng], 15);
+            mapInstance.current = map;
+
+            // OpenStreetMap tiles
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            }).addTo(map);
+
+            // Custom Leaflet Icons from CDN to prevent Vite asset path bugs
+            const customIcon = L.icon({
+                iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+                iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+                shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41],
+            });
+
+            // Add marker
+            const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+            if (lawnName) {
+                marker.bindPopup(`<b>${lawnName}</b><br/>${formattedAddress || ""}`).openPopup();
+            }
+        } catch (err) {
+            console.error("Leaflet map initialization failed:", err);
+            setErrored(true);
+        }
+
+        return () => {
+            if (mapInstance.current) {
+                mapInstance.current.remove();
+                mapInstance.current = null;
+            }
+        };
+    }, [leafletLoaded, lat, lng, lawnName, formattedAddress]);
 
     if (!lat || !lng) {
         return (
@@ -42,11 +122,11 @@ const MapView = ({ lat, lng, lawnName, formattedAddress, height = "320px" }) => 
 
     return (
         <div className="rounded-2xl overflow-hidden border border-purple-100 shadow-sm">
-            {/* Map */}
+            {/* Map container */}
             <div className="relative" style={{ height }}>
-                {/* Loading shimmer */}
-                {!loaded && !errored && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-100 via-purple-50 to-purple-100 animate-shimmer flex items-center justify-center">
+                {/* Loading state */}
+                {!leafletLoaded && !errored && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-100 via-purple-50 to-purple-100 animate-shimmer flex items-center justify-center z-[1000]">
                         <div className="text-center">
                             <div className="text-3xl mb-2">🗺️</div>
                             <p className="text-xs text-gray-400">Loading map...</p>
@@ -54,35 +134,9 @@ const MapView = ({ lat, lng, lawnName, formattedAddress, height = "320px" }) => 
                     </div>
                 )}
 
-                {/* Google Maps Embed iframe */}
-                {embedUrl && !errored ? (
-                    <iframe
-                        ref={iframeRef}
-                        title={`Map — ${lawnName}`}
-                        src={embedUrl}
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0, display: loaded ? "block" : "none" }}
-                        allowFullScreen
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        onLoad={() => setLoaded(true)}
-                        onError={() => setErrored(true)}
-                    />
-                ) : (
-                    /* Fallback: static map image */
-                    <img
-                        src={staticMapUrl}
-                        alt={`Map of ${lawnName}`}
-                        className="w-full h-full object-cover"
-                        onLoad={() => setLoaded(true)}
-                        onError={() => setErrored(true)}
-                    />
-                )}
-
                 {/* Error state */}
-                {errored && (
-                    <div className="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center text-gray-400">
+                {errored ? (
+                    <div className="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center text-gray-400 z-[1000]">
                         <span className="text-4xl mb-2">⚠️</span>
                         <p className="text-sm">Map could not load</p>
                         <a
@@ -94,6 +148,8 @@ const MapView = ({ lat, lng, lawnName, formattedAddress, height = "320px" }) => 
                             Open in Google Maps →
                         </a>
                     </div>
+                ) : (
+                    <div ref={mapRef} className="w-full h-full" style={{ zIndex: 1 }} />
                 )}
             </div>
 
@@ -113,7 +169,7 @@ const MapView = ({ lat, lng, lawnName, formattedAddress, height = "320px" }) => 
                     href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all"
+                    className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all z-10"
                 >
                     🗺️ Get Directions
                 </a>

@@ -155,6 +155,24 @@ const OwnerBookingCard = ({ booking, onAction, loading }) => {
             )}
           </div>
 
+          {/* Selected Services / Cart Items */}
+          {booking.bookingItems && (
+            <div className="mb-3 px-3 py-2 bg-purple-50 rounded-lg border border-purple-100 flex flex-wrap gap-x-4 gap-y-1 items-center text-xs">
+              <span className="font-semibold text-purple-700">Services:</span>
+              {booking.bookingItems.venue && (
+                <span className="text-gray-600 flex items-center gap-0.5">🏡 Venue</span>
+              )}
+              {booking.bookingItems.catering && (
+                <span className="text-gray-600 flex items-center gap-0.5">🍽️ Catering ({booking.guestCount} guests)</span>
+              )}
+              {booking.bookingItems.decoration && (
+                <span className="text-gray-600 flex items-center gap-0.5">
+                  🎊 Decoration {booking.bookingItems.selectedDecorations?.length > 0 && `(${booking.bookingItems.selectedDecorations.join(", ")})`}
+                </span>
+              )}
+            </div>
+          )}
+
           {booking.specialRequests && (
             <div className="bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2 mb-3">
               <p className="text-xs text-yellow-700">

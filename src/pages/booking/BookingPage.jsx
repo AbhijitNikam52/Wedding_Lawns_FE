@@ -22,6 +22,34 @@ const BookingPage = () => {
     specialRequests: "",
   });
 
+  const [bookingItems, setBookingItems] = useState({
+    venue: true,
+    catering: false,
+    decoration: false,
+    selectedDecorations: [],
+  });
+
+  const calculateTotalPrice = () => {
+    if (!lawn) return 0;
+    let total = 0;
+    if (bookingItems.venue) {
+      total += lawn.pricePerDay || 0;
+    }
+    if (bookingItems.catering && lawn.catering?.available) {
+      total += (lawn.catering.pricePerPlate || 0) * (Number(form.guestCount) || 0);
+    }
+    if (bookingItems.decoration && lawn.decoration?.available) {
+      total += lawn.decoration.basePrice || 0;
+      bookingItems.selectedDecorations.forEach((dName) => {
+        const found = lawn.decoration.types?.find((t) => t.name === dName);
+        if (found) {
+          total += found.price || 0;
+        }
+      });
+    }
+    return total;
+  };
+
   // Load lawn details
   useEffect(() => {
     fetchLawnById(id)
@@ -45,6 +73,10 @@ const BookingPage = () => {
     e.preventDefault();
     if (!dateOk) return toast.error("This date is not available");
 
+    if (!bookingItems.venue && !bookingItems.catering && !bookingItems.decoration) {
+      return toast.error("Please select at least one item (Venue, Catering, or Decoration) to book.");
+    }
+
     setSubmitting(true);
     try {
       const data = await createBooking({
@@ -52,6 +84,7 @@ const BookingPage = () => {
         eventDate:       dateParam,
         guestCount:      Number(form.guestCount) || 0,
         specialRequests: form.specialRequests,
+        bookingItems:    bookingItems,
       });
       toast.success("Booking request sent! 🎉");
       navigate(`/bookings/${data.booking._id}/confirmation`);
@@ -156,6 +189,124 @@ const BookingPage = () => {
           />
         </div>
 
+        {/* Booking Cart / Item Selection */}
+        <div className="space-y-4 border-t border-purple-100 pt-4">
+          <label className="block text-sm font-semibold text-dark">
+            🛒 Customize Your Booking (Add/Remove items)
+          </label>
+          
+          <div className="grid grid-cols-1 gap-3">
+            {/* Venue Item */}
+            <div className={`p-4 rounded-xl border transition-all ${bookingItems.venue ? 'border-primary bg-purple-50/50' : 'border-gray-200 bg-white'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bookingItems.venue}
+                    onChange={(e) => setBookingItems(p => ({ ...p, venue: e.target.checked }))}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+                    id="item-venue"
+                  />
+                  <label htmlFor="item-venue" className="font-semibold text-sm text-dark cursor-pointer flex items-center gap-1.5 select-none">
+                    🏡 Venue Rental (Lawn Hire)
+                  </label>
+                </div>
+                <span className="text-sm font-bold text-dark">₹{lawn.pricePerDay?.toLocaleString()}</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1 pl-7">Full day exclusive access to the lawn & standard amenities.</p>
+            </div>
+
+            {/* Catering Item */}
+            {lawn.catering?.available && (
+              <div className={`p-4 rounded-xl border transition-all ${bookingItems.catering ? 'border-primary bg-purple-50/50' : 'border-gray-200 bg-white'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={bookingItems.catering}
+                      onChange={(e) => setBookingItems(p => ({ ...p, catering: e.target.checked }))}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+                      id="item-catering"
+                    />
+                    <label htmlFor="item-catering" className="font-semibold text-sm text-dark cursor-pointer flex items-center gap-1.5 select-none">
+                      🍽️ Catering Services
+                    </label>
+                  </div>
+                  <span className="text-sm font-bold text-dark">
+                    ₹{lawn.catering.pricePerPlate} / plate
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1 pl-7 font-normal">
+                  {lawn.catering.description || "In-house culinary service tailored to your guest size."}
+                </p>
+                {bookingItems.catering && (
+                  <div className="mt-3 pl-7 bg-white p-3 rounded-lg border border-purple-100 text-xs text-gray-600 flex justify-between items-center">
+                    <span>
+                      Catering Cost ({Number(form.guestCount) || 0} guests × ₹{lawn.catering.pricePerPlate})
+                    </span>
+                    <span className="font-semibold text-primary">
+                      ₹{((lawn.catering.pricePerPlate || 0) * (Number(form.guestCount) || 0)).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Decoration Item */}
+            {lawn.decoration?.available && (
+              <div className={`p-4 rounded-xl border transition-all ${bookingItems.decoration ? 'border-primary bg-purple-50/50' : 'border-gray-200 bg-white'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={bookingItems.decoration}
+                      onChange={(e) => setBookingItems(p => ({ ...p, decoration: e.target.checked }))}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+                      id="item-decoration"
+                    />
+                    <label htmlFor="item-decoration" className="font-semibold text-sm text-dark cursor-pointer flex items-center gap-1.5 select-none">
+                      🎊 Decoration Package (Base)
+                    </label>
+                  </div>
+                  <span className="text-sm font-bold text-dark">₹{lawn.decoration.basePrice?.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1 pl-7">Standard flower arrangements, stage lighting, and main gate entry decor.</p>
+                
+                {/* Sub decorations options */}
+                {bookingItems.decoration && lawn.decoration.types?.length > 0 && (
+                  <div className="mt-3 pl-7 space-y-2 border-t border-purple-100 pt-3">
+                    <p className="text-xs font-semibold text-dark">✨ Include Sub-Decorations:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {lawn.decoration.types.map((type) => {
+                        const isSelected = bookingItems.selectedDecorations.includes(type.name);
+                        return (
+                          <div
+                            key={type.name}
+                            onClick={() => {
+                              setBookingItems(p => ({
+                                ...p,
+                                selectedDecorations: isSelected
+                                  ? p.selectedDecorations.filter(n => n !== type.name)
+                                  : [...p.selectedDecorations, type.name]
+                              }));
+                            }}
+                            className={`flex justify-between items-center px-3 py-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                              isSelected ? 'bg-purple-100/50 border-primary text-primary font-medium' : 'bg-gray-50 border-gray-100 text-gray-600'
+                            }`}
+                          >
+                            <span className="capitalize">{type.name}</span>
+                            <span>+₹{type.price}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Special Requests <span className="text-gray-400 font-normal">(optional)</span>
@@ -172,17 +323,42 @@ const BookingPage = () => {
 
         {/* Price summary */}
         <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600">Lawn price</span>
-            <span className="font-medium">₹{lawn.pricePerDay?.toLocaleString()}</span>
-          </div>
+          {bookingItems.venue && (
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-600">Lawn price (Venue rent)</span>
+              <span className="font-medium">₹{lawn.pricePerDay?.toLocaleString()}</span>
+            </div>
+          )}
+          {bookingItems.catering && lawn.catering?.available && (
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-600">Catering ({Number(form.guestCount) || 0} guests)</span>
+              <span className="font-medium">₹{((lawn.catering.pricePerPlate || 0) * (Number(form.guestCount) || 0)).toLocaleString()}</span>
+            </div>
+          )}
+          {bookingItems.decoration && lawn.decoration?.available && (
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-600">Base Decoration</span>
+              <span className="font-medium">₹{lawn.decoration.basePrice?.toLocaleString()}</span>
+            </div>
+          )}
+          {bookingItems.decoration && bookingItems.selectedDecorations.length > 0 && (
+            <div className="flex justify-between text-sm mb-2 pl-3 border-l-2 border-purple-200">
+              <span className="text-gray-500 text-xs">Add-ons ({bookingItems.selectedDecorations.join(", ")})</span>
+              <span className="font-medium text-xs text-gray-600">
+                +₹{bookingItems.selectedDecorations.reduce((sum, dName) => {
+                  const found = lawn.decoration.types?.find(t => t.name === dName);
+                  return sum + (found?.price || 0);
+                }, 0).toLocaleString()}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between text-sm mb-3">
             <span className="text-gray-600">Platform fee</span>
             <span className="font-medium text-green-600">Free</span>
           </div>
           <div className="flex justify-between font-bold text-dark border-t border-purple-200 pt-3">
             <span>Total Amount</span>
-            <span className="text-primary text-lg">₹{lawn.pricePerDay?.toLocaleString()}</span>
+            <span className="text-primary text-lg">₹{calculateTotalPrice().toLocaleString()}</span>
           </div>
           <p className="text-xs text-gray-400 mt-2">
             * Payment will be collected after the owner confirms your booking.

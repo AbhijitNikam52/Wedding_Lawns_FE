@@ -143,6 +143,24 @@ const BookingCard = ({ booking, onCancel, cancelling, onViewPayslip }) => {
             )}
           </div>
 
+          {/* Selected Services / Cart Items */}
+          {booking.bookingItems && (
+            <div className="mb-3 px-3 py-2 bg-purple-50 rounded-lg border border-purple-100 flex flex-wrap gap-x-4 gap-y-1 items-center text-xs">
+              <span className="font-semibold text-purple-700">Services:</span>
+              {booking.bookingItems.venue && (
+                <span className="text-gray-600 flex items-center gap-0.5">🏡 Venue</span>
+              )}
+              {booking.bookingItems.catering && (
+                <span className="text-gray-600 flex items-center gap-0.5">🍽️ Catering ({booking.guestCount} guests)</span>
+              )}
+              {booking.bookingItems.decoration && (
+                <span className="text-gray-600 flex items-center gap-0.5">
+                  🎊 Decoration {booking.bookingItems.selectedDecorations?.length > 0 && `(${booking.bookingItems.selectedDecorations.join(", ")})`}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
             <Link
